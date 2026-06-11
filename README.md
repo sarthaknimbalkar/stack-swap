@@ -71,7 +71,12 @@ activate = [ "..." ]             # optional: runs before start (e.g. tune GPU sh
 start    = [ "docker compose -f /path/compose.yml up -d", "sudo systemctl start mysvc" ]
 stop     = [ "sudo systemctl stop mysvc", "docker compose -f /path/compose.yml stop" ]
 status   = "systemctl is-active mysvc 2>/dev/null || true"   # prints 'active'/'true' when up
+gpu_check = "systemctl is-active mysvc >/dev/null 2>&1 && echo 'mysvc (active)'"  # optional
 ```
+`gpu_check` is optional and only consulted for `gpu = true` projects: `gswap status`
+runs it and lists whatever it prints under "GPU holders", so a new GPU project is
+reported honestly instead of being invisible. `status` always also sweeps running
+containers via `docker ps`, so you get that for free even without `gpu_check`.
 `switch myproj` will then stop all other `gpu = true` projects before starting it.
 
 ## How it works

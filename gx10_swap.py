@@ -200,13 +200,30 @@ def cmd_status(cfg: dict, args) -> None:
     if getattr(args, "json", False):
         return
     print(BOLD("\nGPU holders right now:"))
-    _, out = ssh_run(
+    lines: list[str] = []
+
+    # Per-project hint: each gpu project may declare `gpu_check`, a remote command
+    # that prints something when that project holds the GPU (e.g. the service/proc
+    # name). Honest for any project you add — no hardcoded service names.
+    for key, p in cfg["projects"].items():
+        if not (p.get("gpu") and p.get("gpu_check")):
+            continue
+        _, out = ssh_run(host, p["gpu_check"], capture=True)
+        if out.strip():
+            label = p.get("label", key)
+            for ln in out.strip().splitlines():
+                lines.append(f"  {label}: {ln.strip()}")
+
+    # Always-on fallback sweep: any running container, regardless of project.
+    _, containers = ssh_run(
         host,
-        "for c in $(docker ps --format '{{.Names}}'); do echo \"  container $c\"; done; "
-        "systemctl is-active vllm-server >/dev/null 2>&1 && echo '  systemd vllm-server (active)'",
+        "for c in $(docker ps --format '{{.Names}}'); do echo \"  container $c\"; done",
         capture=True,
     )
-    print(out or DIM("  (none reported)"))
+    if containers.strip():
+        lines.extend(containers.rstrip().splitlines())
+
+    print("\n".join(lines) if lines else DIM("  (none reported)"))
 
 
 def cmd_up(cfg: dict, args) -> None:

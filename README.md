@@ -10,19 +10,32 @@ but for project stacks instead of accounts.
 
 ## Requirements
 - Python 3.11+ (uses stdlib `tomllib`) on your Windows machine.
-- A working **non-interactive** `ssh user@your-gx10-host` from the shell you run `gswap` in.
-  - On this machine that's **Git Bash** (its ssh has the key/agent). Windows OpenSSH in
-    PowerShell only works if the key is in `C:\Users\<you>\.ssh\` and trusted — if PowerShell's
-    `ssh` prompts/hangs, run `gswap` from Git Bash, or point it at a specific ssh:
-    `set GSWAP_SSH=C:\Program Files\Git\usr\bin\ssh.exe` (env var override).
+- A working **non-interactive** SSH key for `user@your-gx10-host`.
 - The SSH user has `sudo` (used for `systemctl`).
 
-## Install
-Add this folder to your PATH (so `gswap` works anywhere), e.g. in PowerShell:
+### Works from PowerShell, cmd, or Git Bash
+`gswap` auto-detects a usable `ssh`: it uses `$env:GSWAP_SSH` if set, otherwise `ssh`
+on PATH, and on Windows it **prefers Git's bundled `ssh.exe`** (which has the key/agent
+this box is set up with). That means it just works from PowerShell — no need to launch
+Git Bash or set anything by hand. If auto-detection picks the wrong ssh, override it:
 ```powershell
-$env:Path += ";E:\gx10-swap"   # or add permanently via System > Environment Variables
+$env:GSWAP_SSH = "C:\Program Files\Git\usr\bin\ssh.exe"
 ```
-Then use `gswap <command>` (the `gswap.cmd` shim calls `python gx10_swap.py`).
+The installer (below) also registers a native PowerShell `gswap` function, so PowerShell
+runs the script directly without going through the `cmd.exe` shim.
+
+## Install
+Run the installer once (PowerShell). It drops a `gswap` shim into
+`%USERPROFILE%\.local\bin` and ensures that folder is on your persistent user PATH:
+```powershell
+powershell -ExecutionPolicy Bypass -File .\install.ps1
+```
+Open a **new** terminal and `gswap <command>` works from anywhere. The shim calls
+this repo's `gx10_swap.py` directly, so edits to the script take effect with no
+reinstall. Uninstall with `.\install.ps1 -Uninstall`.
+
+> Manual alternative (no installer): add this folder to PATH yourself —
+> `$env:Path += ";E:\gx10-swap"` — and use the bundled `gswap.cmd` shim.
 
 ## Commands
 ```
@@ -60,6 +73,19 @@ gswap switch nidamind     # work on NidaMind (CestusAI stopped, vLLM gets 80% of
 gswap switch              # later, just toggle to the other GPU project
 gswap stop-all            # done for the day
 ```
+
+## Shared / standalone services
+Besides the two GPU project stacks, `projects.toml` also defines two **shared
+services** so you can toggle them too (`gswap up|down ollama`, `gswap down open-webui`):
+
+- **`ollama`** — the embeddings backend (`nomic-embed-text` on :11434). NidaMind
+  depends on it, so it is `gpu = false` and **`switch` never auto-stops it** — a
+  `switch nidamind` leaves ollama running. Stop it only when nothing needs embeddings.
+- **`open-webui`** — the standalone chat-UI container (:3000). Pure UI, no GPU.
+
+Because both are `gpu = false`, they don't participate in GPU exclusivity — but they
+DO show up in `gswap status` / `gswap list` and are included in `gswap stop-all`
+(so "stop everything for the day" really stops everything).
 
 ## Adding a project
 Copy a block in `projects.toml`:

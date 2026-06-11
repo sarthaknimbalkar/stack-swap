@@ -81,7 +81,37 @@ _SSH_OPTS = [
 ]
 
 
-_SSH_BIN = os.environ.get("GSWAP_SSH", "ssh")  # override if `ssh` on PATH isn't the configured one
+def _resolve_ssh() -> str:
+    """Find a usable ssh.
+
+    Order: explicit GSWAP_SSH override → `ssh` on PATH → Git's bundled ssh.exe.
+    The Git fallback matters on Windows/PowerShell: the system OpenSSH often lacks
+    the key/agent this box is set up with, while Git Bash's ssh has it. Auto-finding
+    it means `gswap` works from PowerShell with no GSWAP_SSH or Git Bash needed.
+    """
+    override = os.environ.get("GSWAP_SSH")
+    if override:
+        return override
+
+    from shutil import which
+
+    found = which("ssh")
+    if found and os.name != "nt":
+        return found  # on *nix a PATH ssh is fine
+
+    # On Windows, prefer Git's ssh (has the agent/keys); fall back to PATH ssh.
+    candidates = [
+        os.path.expandvars(r"%ProgramFiles%\Git\usr\bin\ssh.exe"),
+        os.path.expandvars(r"%ProgramFiles(x86)%\Git\usr\bin\ssh.exe"),
+        os.path.expandvars(r"%LocalAppData%\Programs\Git\usr\bin\ssh.exe"),
+    ]
+    for c in candidates:
+        if os.path.isfile(c):
+            return c
+    return found or "ssh"
+
+
+_SSH_BIN = _resolve_ssh()  # override with GSWAP_SSH if auto-detection picks the wrong one
 
 
 def ssh_run(host: str, remote_cmd: str, capture: bool = False) -> tuple[int, str]:

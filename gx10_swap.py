@@ -357,7 +357,15 @@ def main() -> None:
     sp.add_argument("project", nargs="?", help="key, prefix, or index; omit to flip or pick")
     sp.set_defaults(fn=cmd_switch)
     sub.add_parser("stop-all", help="stop every project").set_defaults(fn=cmd_stop_all)
-    args = parser.parse_args()
+
+    # claude-swap users reach for `gswap --status` / `--list`; accept the dashed
+    # form for any subcommand by normalizing it to the bare name before parsing.
+    commands = set(sub.choices)
+    argv = [
+        (a[2:] if a.startswith("--") and a[2:] in commands else a)
+        for a in sys.argv[1:]
+    ]
+    args = parser.parse_args(argv)
 
     global DRY_RUN
     DRY_RUN = args.dry_run

@@ -9,6 +9,8 @@ code changes.
 Inspired by the ergonomics of [claude-swap](https://github.com/realiti4/claude-swap),
 but for project stacks instead of accounts.
 
+MIT licensed — see [LICENSE](LICENSE).
+
 ## Requirements
 - Python 3.11+ (uses stdlib `tomllib`) on your Windows machine.
 - A working **non-interactive** (key-based) SSH login to your box.

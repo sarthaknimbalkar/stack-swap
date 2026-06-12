@@ -1,0 +1,58 @@
+# gx10-swap — declarative project stacks on a shared-GPU box.
+#
+# COPY THIS FILE to `projects.toml` and fill in your own host, paths, and stacks:
+#     cp projects.example.toml projects.toml      (PowerShell: Copy-Item)
+# `projects.toml` is gitignored so your real host/paths never get committed.
+#
+# Two GPU projects can't run at once on one shared GPU, so each project is a stack
+# you bring up/down/swap. Add a new project by copying a [projects.<name>] block.
+#
+# Command lists run sequentially over SSH (sudo where needed). `gpu = true` marks
+# a project that monopolizes the GPU — `switch` stops all other gpu projects first.
+# `activate` runs BEFORE `start` (e.g. give the inference server the whole GPU once
+# the other GPU project is down).
+
+ssh = "user@your-gx10-host"          # SSH target reachable non-interactively (key auth)
+
+[projects.project-a]
+label = "Project A"
+gpu = true                            # monopolizes the GPU
+activate = [                          # optional: runs before start (e.g. tune GPU share)
+  "sudo systemctl set-environment GPU_MEM=0.80",
+]
+start = [
+  "docker compose -f /path/to/project-a/docker-compose.yml up -d",
+  "sudo systemctl start my-inference-server",
+]
+stop = [
+  "sudo systemctl stop my-inference-server",
+  "docker compose -f /path/to/project-a/docker-compose.yml stop",
+]
+status = "systemctl is-active my-inference-server 2>/dev/null || true"
+# Optional: prints when THIS project holds the GPU. Shown under `gswap status`.
+gpu_check = "systemctl is-active my-inference-server >/dev/null 2>&1 && echo 'inference server (active)'"
+
+[projects.project-b]
+label = "Project B"
+gpu = true
+start = [
+  "docker compose -f /path/to/project-b/docker-compose.yml up -d",
+]
+stop = [
+  "docker compose -f /path/to/project-b/docker-compose.yml stop",
+]
+status = "docker inspect -f '{{.State.Running}}' project-b-main 2>/dev/null || echo false"
+gpu_check = "docker inspect -f '{{.State.Running}}' project-b-main 2>/dev/null | grep -q true && echo 'container project-b-main (gpu)'"
+
+# --- Shared / standalone services (NOT gpu monopolizers) ---
+# Mark these gpu = false so `switch` never auto-stops them — useful for a service
+# that an active project depends on (e.g. an embeddings backend). They still show up
+# in `gswap status`/`list` and are included in `gswap stop-all`. Toggle them
+# explicitly: `gswap up|down <name>`.
+
+[projects.embeddings]
+label = "Embeddings backend"
+gpu = false
+start = [ "sudo systemctl start my-embeddings" ]
+stop  = [ "sudo systemctl stop my-embeddings 2>/dev/null || true" ]
+status = "curl -sf http://127.0.0.1:11434/api/version >/dev/null 2>&1 && echo active || echo false"

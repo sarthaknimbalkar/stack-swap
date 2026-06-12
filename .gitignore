@@ -3,3 +3,6 @@ __pycache__/
 .venv/
 venv/
 *.local.toml
+
+# Real config holds your host/paths — keep it out of git. Copy from the example.
+projects.toml

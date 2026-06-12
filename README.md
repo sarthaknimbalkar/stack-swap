@@ -1,22 +1,31 @@
 # gx10-swap (`gswap`)
 
-A tiny, dependency-free CLI to **swap whole project stacks on the shared-GPU GX10 box**.
-The GB10 has one GPU; two GPU projects (NidaMind, CestusAI, …) can't run at once. `gswap`
-flips between them over SSH — stop one stack, start another — and is extensible: add a
-project by editing `projects.toml`, no code changes.
+A tiny, dependency-free CLI to **swap whole project stacks on a shared-GPU box**
+(built for an NVIDIA GB10 / Grace-Blackwell, but nothing is specific to it). When one
+GPU can't host two GPU projects at once, `gswap` flips between them over SSH — stop one
+stack, start another — and is extensible: add a project by editing `projects.toml`, no
+code changes.
 
 Inspired by the ergonomics of [claude-swap](https://github.com/realiti4/claude-swap),
 but for project stacks instead of accounts.
 
 ## Requirements
 - Python 3.11+ (uses stdlib `tomllib`) on your Windows machine.
-- A working **non-interactive** SSH key for `user@your-gx10-host`.
+- A working **non-interactive** (key-based) SSH login to your box.
 - The SSH user has `sudo` (used for `systemctl`).
+
+## Configure
+Copy the template and edit it with your own host, paths, and stacks:
+```powershell
+Copy-Item projects.example.toml projects.toml   # bash: cp projects.example.toml projects.toml
+```
+`projects.toml` is **gitignored** — your real host and paths stay on your machine and
+never get committed. See [`projects.example.toml`](projects.example.toml) for the format.
 
 ### Works from PowerShell, cmd, or Git Bash
 `gswap` auto-detects a usable `ssh`: it uses `$env:GSWAP_SSH` if set, otherwise `ssh`
-on PATH, and on Windows it **prefers Git's bundled `ssh.exe`** (which has the key/agent
-this box is set up with). That means it just works from PowerShell — no need to launch
+on PATH, and on Windows it **prefers Git's bundled `ssh.exe`** (which typically has the
+key/agent configured). That means it just works from PowerShell — no need to launch
 Git Bash or set anything by hand. If auto-detection picks the wrong ssh, override it:
 ```powershell
 $env:GSWAP_SSH = "C:\Program Files\Git\usr\bin\ssh.exe"
@@ -69,23 +78,20 @@ slow-starting stack still reports `✓ up` instead of a misleading "verify manua
 
 Typical day:
 ```
-gswap switch nidamind     # work on NidaMind (CestusAI stopped, vLLM gets 80% of the GPU)
+gswap switch project-a    # work on Project A (Project B stopped, A gets the whole GPU)
 gswap switch              # later, just toggle to the other GPU project
 gswap stop-all            # done for the day
 ```
 
 ## Shared / standalone services
-Besides the two GPU project stacks, `projects.toml` also defines two **shared
-services** so you can toggle them too (`gswap up|down ollama`, `gswap down open-webui`):
+Alongside the GPU project stacks, you can declare **shared services** with
+`gpu = false` so `switch` never auto-stops them — handy for a service an active
+project depends on (e.g. an embeddings backend) that must survive a switch.
 
-- **`ollama`** — the embeddings backend (`nomic-embed-text` on :11434). NidaMind
-  depends on it, so it is `gpu = false` and **`switch` never auto-stops it** — a
-  `switch nidamind` leaves ollama running. Stop it only when nothing needs embeddings.
-- **`open-webui`** — the standalone chat-UI container (:3000). Pure UI, no GPU.
-
-Because both are `gpu = false`, they don't participate in GPU exclusivity — but they
-DO show up in `gswap status` / `gswap list` and are included in `gswap stop-all`
-(so "stop everything for the day" really stops everything).
+Because they're `gpu = false`, they don't participate in GPU exclusivity — but they
+still show up in `gswap status` / `gswap list` and are included in `gswap stop-all`
+(so "stop everything for the day" really stops everything). Toggle them explicitly
+with `gswap up|down <name>`.
 
 ## Adding a project
 Copy a block in `projects.toml`:
@@ -107,5 +113,15 @@ containers via `docker ps`, so you get that for free even without `gpu_check`.
 
 ## How it works
 Each command list runs sequentially over `ssh <host> "<cmd>"`. `switch` enforces GPU
-exclusivity. NidaMind's `activate` raises vLLM's `--gpu-memory-utilization` to 0.80 (safe
-once CestusAI is stopped — with both up there's only ~79 GB free, which is why 0.85 OOM'd).
+exclusivity by stopping every other `gpu = true` project before starting the target.
+A project's optional `activate` step runs before `start` — useful for handing the whole
+GPU to the active project once the other is down (e.g. raising an inference server's
+memory-utilization knob now that nothing else is competing for the pool).
+
+## Security / privacy
+- **No secrets in the repo.** Auth is your SSH key (`BatchMode=yes`, so it fails fast
+  instead of prompting); no passwords or tokens are stored or read by `gswap`.
+- **Your host and paths stay local** — they live only in `projects.toml`, which is
+  gitignored. Only the sanitized `projects.example.toml` is committed.
+- Remote command lists in `projects.toml` are run verbatim on your box, so treat that
+  file as you would any shell script you run with `sudo`.

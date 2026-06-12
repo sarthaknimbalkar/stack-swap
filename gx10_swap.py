@@ -64,7 +64,9 @@ YELLOW = lambda s: _c("33", s)  # noqa: E731
 
 def load() -> dict:
     if not CONFIG.exists():
-        sys.exit(f"config not found: {CONFIG}")
+        example = CONFIG.with_name("projects.example.toml")
+        hint = f"\nCopy the template to get started:\n  cp {example.name} {CONFIG.name}" if example.exists() else ""
+        sys.exit(f"config not found: {CONFIG}{hint}")
     with CONFIG.open("rb") as f:
         cfg = tomllib.load(f)
     if "ssh" not in cfg or "projects" not in cfg:

@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""gx10-swap (gswap) — swap whole project stacks on the shared-GPU GX10 box.
+"""gx10-swap (gswap) - swap whole project stacks on the shared-GPU GX10 box.
 
 Two GPU projects (NidaMind, CestusAI, ...) can't run on one GB10 at once, so this
 flips between them over SSH: stop one stack, start another. Projects are declared
-in projects.toml — add a block to onboard a new one; no code changes.
+in projects.toml - add a block to onboard a new one; no code changes.
 
 Stdlib only (Python 3.11+ for tomllib). Usage:
 
@@ -12,8 +12,8 @@ Stdlib only (Python 3.11+ for tomllib). Usage:
   gswap up <project>           # activate + start a project's stack
   gswap down <project>         # stop a project's stack
   gswap switch [project]       # stop other GPU projects, then bring this one up
-                               #   no arg with exactly 2 GPU projects → flip to the other
-                               #   no arg otherwise → interactive picker
+                               #   no arg with exactly 2 GPU projects -> flip to the other
+                               #   no arg otherwise -> interactive picker
   gswap restart <project>      # stop then start a project's stack
   gswap stop-all               # stop every configured project
 
@@ -77,7 +77,7 @@ def load() -> dict:
 
 
 _SSH_OPTS = [
-    "-o", "BatchMode=yes",            # never prompt — fail fast if auth/key isn't set up
+    "-o", "BatchMode=yes",            # never prompt - fail fast if auth/key isn't set up
     "-o", "StrictHostKeyChecking=accept-new",
     "-o", "ConnectTimeout=10",
 ]
@@ -86,7 +86,7 @@ _SSH_OPTS = [
 def _resolve_ssh() -> str:
     """Find a usable ssh.
 
-    Order: explicit GSWAP_SSH override → `ssh` on PATH → Git's bundled ssh.exe.
+    Order: explicit GSWAP_SSH override -> `ssh` on PATH -> Git's bundled ssh.exe.
     The Git fallback matters on Windows/PowerShell: the system OpenSSH often lacks
     the key/agent this box is set up with, while Git Bash's ssh has it. Auto-finding
     it means `gswap` works from PowerShell with no GSWAP_SSH or Git Bash needed.
@@ -184,7 +184,7 @@ def _resolve(cfg: dict, name: str) -> str:
     if len(matches) == 1:
         return matches[0]
     if len(matches) > 1:
-        sys.exit(f"ambiguous '{name}' — matches {', '.join(matches)}")
+        sys.exit(f"ambiguous '{name}' - matches {', '.join(matches)}")
     sys.exit(f"unknown project '{name}'. Configured: {', '.join(keys)}")
 
 
@@ -202,7 +202,7 @@ def _confirm(args, prompt: str) -> bool:
         return False
 
 
-# ── commands ──────────────────────────────────────────────────────────────────
+# - commands -
 def _project_states(cfg: dict) -> list[tuple[str, dict, bool]]:
     host = cfg["ssh"]
     return [(key, p, is_up(host, p)) for key, p in cfg["projects"].items()]
@@ -236,7 +236,7 @@ def cmd_status(cfg: dict, args) -> None:
 
     # Per-project hint: each gpu project may declare `gpu_check`, a remote command
     # that prints something when that project holds the GPU (e.g. the service/proc
-    # name). Honest for any project you add — no hardcoded service names.
+    # name). Honest for any project you add - no hardcoded service names.
     for key, p in cfg["projects"].items():
         if not (p.get("gpu") and p.get("gpu_check")):
             continue
@@ -263,21 +263,21 @@ def cmd_up(cfg: dict, args) -> None:
     key = _resolve(cfg, args.project)
     p = cfg["projects"][key]
     if p.get("activate"):
-        run_steps(host, p["activate"], f"Preparing {p.get('label', key)}…")
-    run_steps(host, p["start"], f"Starting {p.get('label', key)}…")
+        run_steps(host, p["activate"], f"Preparing {p.get('label', key)}...")
+    run_steps(host, p["start"], f"Starting {p.get('label', key)}...")
     if DRY_RUN:
         return
     if wait_until_up(host, p):
         print(GREEN(f"✓ {key} up"))
     else:
-        print(YELLOW("started (status not confirmed yet — re-check with `gswap status`)"))
+        print(YELLOW("started (status not confirmed yet - re-check with `gswap status`)"))
 
 
 def cmd_down(cfg: dict, args) -> None:
     host = cfg["ssh"]
     key = _resolve(cfg, args.project)
     p = cfg["projects"][key]
-    run_steps(host, p["stop"], f"Stopping {p.get('label', key)}…")
+    run_steps(host, p["stop"], f"Stopping {p.get('label', key)}...")
     if not DRY_RUN:
         print(GREEN(f"✓ {key} stopped"))
 
@@ -295,12 +295,12 @@ def _pick_switch_target(cfg: dict, args) -> str:
     gpu_keys = [k for k, p in cfg["projects"].items() if p.get("gpu")]
     host = cfg["ssh"]
 
-    # Exactly two GPU projects → flip to whichever isn't currently up.
+    # Exactly two GPU projects -> flip to whichever isn't currently up.
     if len(gpu_keys) == 2:
         up = [k for k in gpu_keys if is_up(host, cfg["projects"][k])]
         if len(up) == 1:
             return gpu_keys[1] if up[0] == gpu_keys[0] else gpu_keys[0]
-        # none or both up — fall through to picker
+        # none or both up - fall through to picker
 
     # Interactive picker.
     if not sys.stdin.isatty():
@@ -324,7 +324,7 @@ def cmd_switch(cfg: dict, args) -> None:
     # Stop every OTHER gpu project first so the GPU is free for the target.
     for key, p in cfg["projects"].items():
         if key != target_key and p.get("gpu"):
-            run_steps(host, p["stop"], f"Stopping {p.get('label', key)} (freeing GPU)…")
+            run_steps(host, p["stop"], f"Stopping {p.get('label', key)} (freeing GPU)...")
     cmd_up(cfg, args)
     if not DRY_RUN:
         print(GREEN(f"\n✓ switched to {target_key}"))
@@ -335,7 +335,7 @@ def cmd_stop_all(cfg: dict, args) -> None:
     if not _confirm(args, "Stop EVERY configured project on the GX10?"):
         sys.exit("aborted")
     for key, p in cfg["projects"].items():
-        run_steps(host, p["stop"], f"Stopping {p.get('label', key)}…")
+        run_steps(host, p["stop"], f"Stopping {p.get('label', key)}...")
     if not DRY_RUN:
         print(GREEN("✓ all projects stopped"))
 

@@ -1,4 +1,4 @@
-# gx10-swap — declarative project stacks on a shared-GPU box.
+# gx10-swap - declarative project stacks on a shared-GPU box.
 #
 # COPY THIS FILE to `projects.toml` and fill in your own host, paths, and stacks:
 #     cp projects.example.toml projects.toml      (PowerShell: Copy-Item)
@@ -8,7 +8,7 @@
 # you bring up/down/swap. Add a new project by copying a [projects.<name>] block.
 #
 # Command lists run sequentially over SSH (sudo where needed). `gpu = true` marks
-# a project that monopolizes the GPU — `switch` stops all other gpu projects first.
+# a project that monopolizes the GPU - `switch` stops all other gpu projects first.
 # `activate` runs BEFORE `start` (e.g. give the inference server the whole GPU once
 # the other GPU project is down).
 
@@ -45,7 +45,7 @@ status = "docker inspect -f '{{.State.Running}}' project-b-main 2>/dev/null || e
 gpu_check = "docker inspect -f '{{.State.Running}}' project-b-main 2>/dev/null | grep -q true && echo 'container project-b-main (gpu)'"
 
 # --- Shared / standalone services (NOT gpu monopolizers) ---
-# Mark these gpu = false so `switch` never auto-stops them — useful for a service
+# Mark these gpu = false so `switch` never auto-stops them - useful for a service
 # that an active project depends on (e.g. an embeddings backend). They still show up
 # in `gswap status`/`list` and are included in `gswap stop-all`. Toggle them
 # explicitly: `gswap up|down <name>`.

@@ -2,14 +2,14 @@
 
 A tiny, dependency-free CLI to **swap whole project stacks on a shared-GPU box**
 (built for an NVIDIA GB10 / Grace-Blackwell, but nothing is specific to it). When one
-GPU can't host two GPU projects at once, `gswap` flips between them over SSH — stop one
-stack, start another — and is extensible: add a project by editing `projects.toml`, no
+GPU can't host two GPU projects at once, `gswap` flips between them over SSH - stop one
+stack, start another - and is extensible: add a project by editing `projects.toml`, no
 code changes.
 
 Inspired by the ergonomics of [claude-swap](https://github.com/realiti4/claude-swap),
 but for project stacks instead of accounts.
 
-MIT licensed — see [LICENSE](LICENSE).
+MIT licensed - see [LICENSE](LICENSE).
 
 ## Requirements
 - Python 3.11+ (uses stdlib `tomllib`) on your Windows machine.
@@ -21,13 +21,13 @@ Copy the template and edit it with your own host, paths, and stacks:
 ```powershell
 Copy-Item projects.example.toml projects.toml   # bash: cp projects.example.toml projects.toml
 ```
-`projects.toml` is **gitignored** — your real host and paths stay on your machine and
+`projects.toml` is **gitignored** - your real host and paths stay on your machine and
 never get committed. See [`projects.example.toml`](projects.example.toml) for the format.
 
 ### Works from PowerShell, cmd, or Git Bash
 `gswap` auto-detects a usable `ssh`: it uses `$env:GSWAP_SSH` if set, otherwise `ssh`
 on PATH, and on Windows it **prefers Git's bundled `ssh.exe`** (which typically has the
-key/agent configured). That means it just works from PowerShell — no need to launch
+key/agent configured). That means it just works from PowerShell - no need to launch
 Git Bash or set anything by hand. If auto-detection picks the wrong ssh, override it:
 ```powershell
 $env:GSWAP_SSH = "C:\Program Files\Git\usr\bin\ssh.exe"
@@ -45,8 +45,8 @@ Open a **new** terminal and `gswap <command>` works from anywhere. The shim call
 this repo's `gx10_swap.py` directly, so edits to the script take effect with no
 reinstall. Uninstall with `.\install.ps1 -Uninstall`.
 
-> Manual alternative (no installer): add this folder to PATH yourself —
-> `$env:Path += ";E:\gx10-swap"` — and use the bundled `gswap.cmd` shim.
+> Manual alternative (no installer): add this folder to PATH yourself -
+> `$env:Path += ";E:\gx10-swap"` - and use the bundled `gswap.cmd` shim.
 
 ## Commands
 ```
@@ -64,9 +64,9 @@ Anywhere a `<project>` is expected you can use the **key** (`nidamind`), an
 **unambiguous prefix** (`nida`), or its **list index** (`1`, as shown by `gswap list`).
 
 ### `switch` with no argument
-- **Exactly two GPU projects and one is up** → flips to the other (the everyday case):
+- **Exactly two GPU projects and one is up** -> flips to the other (the everyday case):
   just type `gswap switch` to toggle.
-- **Otherwise** (none/both up, or 3+ GPU projects) → shows the list and prompts you to pick.
+- **Otherwise** (none/both up, or 3+ GPU projects) -> shows the list and prompts you to pick.
 
 ### Global flags
 ```
@@ -87,10 +87,10 @@ gswap stop-all            # done for the day
 
 ## Shared / standalone services
 Alongside the GPU project stacks, you can declare **shared services** with
-`gpu = false` so `switch` never auto-stops them — handy for a service an active
+`gpu = false` so `switch` never auto-stops them - handy for a service an active
 project depends on (e.g. an embeddings backend) that must survive a switch.
 
-Because they're `gpu = false`, they don't participate in GPU exclusivity — but they
+Because they're `gpu = false`, they don't participate in GPU exclusivity - but they
 still show up in `gswap status` / `gswap list` and are included in `gswap stop-all`
 (so "stop everything for the day" really stops everything). Toggle them explicitly
 with `gswap up|down <name>`.
@@ -116,14 +116,14 @@ containers via `docker ps`, so you get that for free even without `gpu_check`.
 ## How it works
 Each command list runs sequentially over `ssh <host> "<cmd>"`. `switch` enforces GPU
 exclusivity by stopping every other `gpu = true` project before starting the target.
-A project's optional `activate` step runs before `start` — useful for handing the whole
+A project's optional `activate` step runs before `start` - useful for handing the whole
 GPU to the active project once the other is down (e.g. raising an inference server's
 memory-utilization knob now that nothing else is competing for the pool).
 
 ## Security / privacy
 - **No secrets in the repo.** Auth is your SSH key (`BatchMode=yes`, so it fails fast
   instead of prompting); no passwords or tokens are stored or read by `gswap`.
-- **Your host and paths stay local** — they live only in `projects.toml`, which is
+- **Your host and paths stay local** - they live only in `projects.toml`, which is
   gitignored. Only the sanitized `projects.example.toml` is committed.
 - Remote command lists in `projects.toml` are run verbatim on your box, so treat that
   file as you would any shell script you run with `sudo`.

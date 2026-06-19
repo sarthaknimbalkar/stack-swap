@@ -363,11 +363,16 @@ def main() -> None:
     # claude-swap users reach for `gswap --status` / `--list`; accept the dashed
     # form for any subcommand by normalizing it to the bare name before parsing.
     commands = set(sub.choices)
-    argv = [
+    norm = [
         (a[2:] if a.startswith("--") and a[2:] in commands else a)
         for a in sys.argv[1:]
     ]
-    args = parser.parse_args(argv)
+    # Global flags are defined on the top parser, so argparse only accepts them before
+    # the subcommand. Float them to the front so `gswap list --dry-run` works too.
+    global_flags = {"--dry-run", "--json", "-y", "--yes"}
+    gflags = [a for a in norm if a in global_flags]
+    rest = [a for a in norm if a not in global_flags]
+    args = parser.parse_args(gflags + rest)
 
     global DRY_RUN
     DRY_RUN = args.dry_run

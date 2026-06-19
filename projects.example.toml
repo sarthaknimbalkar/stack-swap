@@ -1,4 +1,4 @@
-# gx10-swap - declarative project stacks on a shared-GPU box.
+# stack-swap - declarative project stacks on a shared-GPU box.
 #
 # COPY THIS FILE to `projects.toml` and fill in your own host, paths, and stacks:
 #     cp projects.example.toml projects.toml      (PowerShell: Copy-Item)
@@ -12,7 +12,7 @@
 # `activate` runs BEFORE `start` (e.g. give the inference server the whole GPU once
 # the other GPU project is down).
 
-ssh = "user@your-gx10-host"          # SSH target reachable non-interactively (key auth)
+ssh = "user@your-host"          # SSH target reachable non-interactively (key auth)
 
 [projects.project-a]
 label = "Project A"

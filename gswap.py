@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-"""gx10-swap (gswap) - swap whole project stacks on the shared-GPU GX10 box.
+"""stack-swap (gswap) - swap whole project stacks on your shared-GPU box.
 
-Two GPU projects (NidaMind, CestusAI, ...) can't run on one GB10 at once, so this
+Two GPU projects (NidaMind, CestusAI, ...) can't share one GPU, so this
 flips between them over SSH: stop one stack, start another. Projects are declared
 in projects.toml - add a block to onboard a new one; no code changes.
 
 Stdlib only (Python 3.11+ for tomllib). Usage:
 
-  gswap status                 # what's up on the GX10 + GPU holders
+  gswap status                 # what's up on your box + GPU holders
   gswap list                   # configured projects
   gswap up <project>           # activate + start a project's stack
   gswap down <project>         # stop a project's stack
@@ -117,7 +117,7 @@ _SSH_BIN = _resolve_ssh()  # override with GSWAP_SSH if auto-detection picks the
 
 
 def ssh_run(host: str, remote_cmd: str, capture: bool = False) -> tuple[int, str]:
-    """Run one command on the GX10. Returns (exit_code, output)."""
+    """Run one command on your box. Returns (exit_code, output)."""
     if DRY_RUN:
         # Capturing callers (status checks) get a benign empty result; step
         # runners print the command via run_steps and never reach here.
@@ -332,7 +332,7 @@ def cmd_switch(cfg: dict, args) -> None:
 
 def cmd_stop_all(cfg: dict, args) -> None:
     host = cfg["ssh"]
-    if not _confirm(args, "Stop EVERY configured project on the GX10?"):
+    if not _confirm(args, "Stop EVERY configured project on your box?"):
         sys.exit("aborted")
     for key, p in cfg["projects"].items():
         run_steps(host, p["stop"], f"Stopping {p.get('label', key)}...")
@@ -342,7 +342,7 @@ def cmd_stop_all(cfg: dict, args) -> None:
 
 def main() -> None:
     cfg = load()
-    parser = argparse.ArgumentParser(prog="gswap", description="Swap GPU project stacks on the GX10.")
+    parser = argparse.ArgumentParser(prog="gswap", description="Swap GPU project stacks on your box.")
     parser.add_argument("--dry-run", action="store_true", help="print remote commands without running them")
     parser.add_argument("--json", action="store_true", help="machine-readable output (list/status)")
     parser.add_argument("-y", "--yes", action="store_true", help="skip confirmation prompts")

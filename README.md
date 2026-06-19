@@ -1,13 +1,22 @@
-# gx10-swap (`gswap`)
+# stack-swap (`gswap`)
 
-A tiny, dependency-free CLI to **swap whole project stacks on a shared-GPU box**
-(built for an NVIDIA GB10 / Grace-Blackwell, but nothing is specific to it). When one
-GPU can't host two GPU projects at once, `gswap` flips between them over SSH - stop one
-stack, start another - and is extensible: add a project by editing `projects.toml`, no
-code changes.
+**One GPU, two projects that each want all of it.** If you run more than one GPU stack on
+a single box (a homelab rig, a shared dev server, a single cloud GPU), you can't keep both
+up at once - so you're forever SSH'ing in to stop one set of containers/services and start
+another, by hand.
 
-Inspired by the ergonomics of [claude-swap](https://github.com/realiti4/claude-swap),
-but for project stacks instead of accounts.
+`gswap` makes that one command. It flips between whole project stacks over SSH - stop one,
+start another, hand the freed GPU to the winner - and is **tiny and dependency-free**
+(stdlib Python only). Add a project by editing `projects.toml`; no code changes.
+
+```
+gswap switch project-a     # stop everything else on the GPU, bring Project A up
+gswap switch               # later, just toggle to the other one
+```
+
+Inspired by the ergonomics of [claude-swap](https://github.com/realiti4/claude-swap), but
+for project stacks instead of accounts. Originally built for a single NVIDIA GB10, but
+nothing is specific to it.
 
 MIT licensed - see [LICENSE](LICENSE).
 
@@ -42,15 +51,15 @@ Run the installer once (PowerShell). It drops a `gswap` shim into
 powershell -ExecutionPolicy Bypass -File .\install.ps1
 ```
 Open a **new** terminal and `gswap <command>` works from anywhere. The shim calls
-this repo's `gx10_swap.py` directly, so edits to the script take effect with no
+this repo's `gswap.py` directly, so edits to the script take effect with no
 reinstall. Uninstall with `.\install.ps1 -Uninstall`.
 
 > Manual alternative (no installer): add this folder to PATH yourself -
-> `$env:Path += ";E:\gx10-swap"` - and use the bundled `gswap.cmd` shim.
+> `$env:Path += ";E:\stack-swap"` - and use the bundled `gswap.cmd` shim.
 
 ## Commands
 ```
-gswap status              # what's up on the GX10 + which containers/services hold the GPU
+gswap status              # what's up on your box + which containers/services hold the GPU
 gswap list                # configured projects and whether each is up
 gswap up <project>        # activate (e.g. set vLLM GPU share) + start a project's stack
 gswap down <project>      # stop a project's stack

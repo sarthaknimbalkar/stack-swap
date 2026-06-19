@@ -1,10 +1,10 @@
 #requires -Version 5
 <#
-  gx10-swap installer - makes `gswap` work from any shell.
+  stack-swap installer - makes `gswap` work from any shell.
 
   What it does:
     1. Writes a `gswap.cmd` shim into %USERPROFILE%\.local\bin that calls this
-       repo's gx10_swap.py (so edits to the script take effect with no reinstall).
+       repo's gswap.py (so edits to the script take effect with no reinstall).
        This serves cmd.exe and Git Bash.
     2. Registers a native PowerShell `gswap` function in your $PROFILE, so PowerShell
        runs the script directly (no cmd.exe dependency).
@@ -18,12 +18,12 @@ param([switch]$Uninstall)
 $ErrorActionPreference = 'Stop'
 
 $repo   = $PSScriptRoot                                  # this repo, wherever it lives
-$script = Join-Path $repo 'gx10_swap.py'
+$script = Join-Path $repo 'gswap.py'
 $binDir = Join-Path $env:USERPROFILE '.local\bin'        # same dir cswap uses; on PATH
 $shim   = Join-Path $binDir 'gswap.cmd'
 
-$MarkBegin = '# >>> gswap (gx10-swap) >>>'
-$MarkEnd   = '# <<< gswap (gx10-swap) <<<'
+$MarkBegin = '# >>> gswap (stack-swap) >>>'
+$MarkEnd   = '# <<< gswap (stack-swap) <<<'
 
 function Remove-ProfileBlock {
     if (-not (Test-Path $PROFILE)) { return $false }
@@ -42,7 +42,7 @@ if ($Uninstall) {
     return
 }
 
-if (-not (Test-Path $script)) { throw "gx10_swap.py not found next to installer at $script" }
+if (-not (Test-Path $script)) { throw "gswap.py not found next to installer at $script" }
 if (-not (Get-Command python -ErrorAction SilentlyContinue)) {
     Write-Warning "python not found on PATH - install Python 3.11+ or gswap won't run."
 }
